@@ -1,5 +1,5 @@
 def crear_lista(x,y):
-    list=[valor1,valor2,valor1 + valor2]
+    list=[x,y,x + y]
     return list
 
 valor1 = int(input("Ingrese el primer valor: "))
