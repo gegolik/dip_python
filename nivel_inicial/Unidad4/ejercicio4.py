@@ -8,3 +8,5 @@ f = "hola juan carlos"
 
 print(f)
 print(invertir(f))
+
+"""Como funcionan los indices dentro de las listas ejemplo lista[1:], lista[::-1]...."""
