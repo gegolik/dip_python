@@ -1,14 +1,15 @@
 
-def recorrer_lista(item):
+def recorrer_lista(item, tab, nivel):
     for x in item:
         if isinstance(x, list):
-            recorrer_lista(x)
+            recorrer_lista(x, tab+1, nivel+1)
         else:
-            print(x)
+            print ("\t" * tab, x, nivel)
+            #print("\t*{tab} Elemento {x} - Nivel {nivel}")
 
 
 lista = ["elemento1n1", "elemento2n1", "elemento3n1",
             ["elemento1n2", "elemento2n2", "elemento3n2",
                 ["elemento1n3", "elemento2n3", "elemento3n3"]]]
 
-recorrer_lista(lista)
+recorrer_lista(lista, 0 ,1)
