@@ -9,5 +9,12 @@ lista = []
 for i in range (1,edad+1):
     lista.append(i)
 
-print(lista)
-print(lista[::-1])
+lista_inv = lista[::-1]
+
+
+
+print (str(lista)[1:-1])
+print (str(lista_inv)[1:-1])
+
+#print(lista, sep=", ")
+#print(lista_inv, sep=", ")
