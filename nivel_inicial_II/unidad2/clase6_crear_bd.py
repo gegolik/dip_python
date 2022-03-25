@@ -1,4 +1,11 @@
 import sqlite3
 
-bd = sqlite3.connect("baseprueba.db")
-bd.close
+def crear_base():
+    bd = sqlite3.connect("baseprueba.db")
+    return bd
+
+
+
+
+
+bd = crear_base()
