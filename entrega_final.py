@@ -20,26 +20,46 @@ def crear_tabla():
              ,apellido varchar(100) NOT NULL
              ,club varchar(100) NOT NULL
              )
-    """
+        """
     cursor.execute(sql)
     con.commit()
 
 def insertar (nombre, apellido, club, tree):
-    global ficha
-    tree.insert("","end",text=str(ficha+1), values=(nombre,apellido, club))
-    ficha += 1
+    con= conectar()
+    cursor=con.cursor()
+    data=(nombre, apellido, club)
+    sql="""INSERT INTO jugador(nombre, apellido, club) VALUES(?,?,?)"""
+    cursor.execute(sql,data)
+    con.commit()
+    print("ALTA OK")
+    actualizar_treeview(tree)
     limpiar_datos()
+
 
 def borrar(tree): 
     seleccion = tree.selection()
     item = tree.item(seleccion)
     ficha=item["text"]
-    """
-    delete en bases
-    """
-
-
+    con=conectar()
+    cursor=con.cursor()
+    data=(ficha,)
+    sql="""DELETE FROM jugador WHERE ficha = ?"""
+    cursor.execute(sql,data)
+    con.commit()
     tree.delete(seleccion)
+    print("BAJA OK - ",ficha)
+    limpiar_datos()
+
+def modificar(ficha, nombre, apellido, club, tree):
+    print(ficha, nombre, apellido, club)
+    con=conectar()
+    cursor=con.cursor()
+    data=(nombre, apellido, club,ficha)
+    sql="""UPDATE jugador SET nombre= ? ,apellido= ? ,club= ? WHERE ficha= ?"""
+    cursor.execute(sql,data)
+    con.commit()
+    print(cursor.rowcount, "record(s) affected")
+    actualizar_treeview(tree)
     limpiar_datos()
 
 
@@ -63,14 +83,13 @@ def actualizar_treeview(tree):
     for element in records:
         tree.delete(element)
 
-    sql = "SELECT * FROM jugador ORDER BY ficha ASC"
+    sql = "SELECT * FROM jugador ORDER BY ficha DESC"
     con=conectar()
     cursor=con.cursor()
     datos=cursor.execute(sql)
 
     resultado = datos.fetchall()
     for fila in resultado:
-        print(fila)
         tree.insert("", 0, text=fila[0], values=(fila[1], fila[2], fila[3]))
 
 
@@ -79,9 +98,8 @@ def actualizar_treeview(tree):
 #-------------------------------------------------------
 
 try:
-    conectar()
+    con = conectar()
     crear_tabla()
-    #actualizar_treeview(tabla)
 except:
     print("Hay un error")
 
@@ -164,7 +182,7 @@ filtro_entry.grid(row=3,column=6)
 alta_button = Button(master, text="Alta", command=lambda:insertar(var_nombre.get(), var_apellido.get(), var_club.get(),tabla))
 alta_button.grid(row=5, column=0)
 #BOTON MODIFICA
-modif_button = Button(master, text="Modificar")
+modif_button = Button(master, text="Modificar", command=lambda:modificar(var_ficha.get(),var_nombre.get(),var_apellido.get(),var_club.get(),tabla))
 modif_button.grid(row=5, column=1)
 #BOTON BAJA
 baja_button = Button(master, text="Baja", command=lambda:borrar(tabla))
@@ -194,6 +212,7 @@ tabla.heading("#3", text="Club")
 
 tabla.grid(column=2, row=6, columnspan=1)
 
-tabla.bind("<Double-1>", click)
+actualizar_treeview(tabla)
 
+tabla.bind("<Double-1>", click)
 master.mainloop()
