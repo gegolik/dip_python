@@ -1,17 +1,24 @@
+from glob import glob
+from sre_parse import GLOBAL_FLAGS
 from tkinter import *
 from tkinter import ttk
 from tkinter.messagebox import *
 import sqlite3
+import re
+from turtle import title
+from unittest import result
 
 #-------------------------------------------------------
 #FUNCTIONS
 #-------------------------------------------------------
 
 def conectar():
+    
     con = sqlite3.connect("mibase.db")
     return con
 
 def crear_tabla():
+    global visibilidad_boton
     con = conectar()
     cursor = con.cursor()
     sql = """CREATE TABLE jugador(
@@ -23,17 +30,31 @@ def crear_tabla():
         """
     cursor.execute(sql)
     con.commit()
+    visibilidad_boton = "disabled"
+
+def validar_dato(dato):
+    regex_dato = re.compile(r'^([a-z]+)( [a-z]+)*$',re.IGNORECASE)
+    res = regex_dato.search(dato)
+    if res:
+        return 0
+    else:
+        return 1    
+
 
 def insertar (nombre, apellido, club, tree):
-    con= conectar()
-    cursor=con.cursor()
-    data=(nombre, apellido, club)
-    sql="""INSERT INTO jugador(nombre, apellido, club) VALUES(?,?,?)"""
-    cursor.execute(sql,data)
-    con.commit()
-    print("ALTA OK")
-    actualizar_treeview(tree)
-    limpiar_datos()
+    err = validar_dato(nombre)
+    if not err:
+        con= conectar()
+        cursor=con.cursor()
+        data=(nombre, apellido, club)
+        sql="""INSERT INTO jugador(nombre, apellido, club) VALUES(?,?,?)"""
+        cursor.execute(sql,data)
+        con.commit()
+        actualizar_treeview(tree)
+        limpiar_datos()
+        showinfo(message="El jugador se inserto con éxito", title="Ingreso de datos")
+    else:
+        showerror(message="Nombre Inválido", title= "Error de datos")
 
 
 def borrar(tree): 
@@ -51,16 +72,20 @@ def borrar(tree):
     limpiar_datos()
 
 def modificar(ficha, nombre, apellido, club, tree):
-    print(ficha, nombre, apellido, club)
-    con=conectar()
-    cursor=con.cursor()
-    data=(nombre, apellido, club,ficha)
-    sql="""UPDATE jugador SET nombre= ? ,apellido= ? ,club= ? WHERE ficha= ?"""
-    cursor.execute(sql,data)
-    con.commit()
-    print(cursor.rowcount, "record(s) affected")
-    actualizar_treeview(tree)
-    limpiar_datos()
+    err = validar_dato(nombre)
+    if not err:
+        con=conectar()
+        cursor=con.cursor()
+        data=(nombre, apellido, club,ficha)
+        sql="""UPDATE jugador SET nombre= ? ,apellido= ? ,club= ? WHERE ficha= ?"""
+        cursor.execute(sql,data)
+        con.commit()
+        print(cursor.rowcount, "record(s) affected")
+        actualizar_treeview(tree)
+        limpiar_datos()
+        showinfo(message="El jugador se modifico con éxito", title="Actualización de datos")
+    else:
+        showerror(message="Nombre Inválido", title= "Error de datos")
 
 
 def click(e):
@@ -72,11 +97,20 @@ def click(e):
     var_club.set(tabla.item(item,"values")[2])
 
 def limpiar_datos():
+    global var_ficha
+    global var_nombre
+    global var_apellido
+    global var_club
+
     var_ficha.set("")
     var_nombre.set("")
     var_apellido.set("")
     var_club.set("")
 
+
+def llenar_treeview(tree,datos):
+    for fila in datos:
+        tree.insert("", 0, text=fila[0], values=(fila[1], fila[2], fila[3]))
 
 def actualizar_treeview(tree):
     records = tree.get_children()
@@ -87,21 +121,55 @@ def actualizar_treeview(tree):
     con=conectar()
     cursor=con.cursor()
     datos=cursor.execute(sql)
-
     resultado = datos.fetchall()
-    for fila in resultado:
-        tree.insert("", 0, text=fila[0], values=(fila[1], fila[2], fila[3]))
+    llenar_treeview(tree, resultado)
 
+def limpiar_tree(tree):
+    records = tree.get_children()
+    for element in records:
+        tree.delete(element)
 
+def consultar(opcion_filtro, tree, filtro):
+    if opcion_filtro == 1:
+        sql = """SELECT * 
+                    FROM jugador
+                    WHERE ficha = ?
+                """        
+    elif opcion_filtro == 2:
+        sql = """SELECT * 
+                    FROM jugador
+                    WHERE apellido LIKE ?
+                """
+        filtro= filtro + '%'
+    else:
+        showerror(message="No ha seleccionado un filtro", title="Error")
+        return 0
+    data = (filtro,)
+    con=conectar()
+    cursor=con.cursor()
+    datos=cursor.execute(sql,data)
+    con.commit()
+    resultado = datos.fetchall()
+    if  len(resultado)> 0:
+        limpiar_tree(tree)
+        llenar_treeview(tree, resultado)
+    else:
+        showerror(message="No se han encontrado jugadores",title="Error")
 #-------------------------------------------------------
 #INICIALIZAR
 #-------------------------------------------------------
 
 try:
     con = conectar()
+except:
+    showerror(message="No se ha podido conectar a la Base de Datos", title="Error")
+
+try:
     crear_tabla()
 except:
-    print("Hay un error")
+    print("La tabla ya existe... puede continuar trabajando")
+
+
 
 
 
@@ -188,8 +256,11 @@ modif_button.grid(row=5, column=1)
 baja_button = Button(master, text="Baja", command=lambda:borrar(tabla))
 baja_button.grid(row=5, column=2)
 #BOTON CONSULTA
-consulta_button = Button(master, text="Consulta")
+consulta_button = Button(master, text="Consulta", command=lambda:consultar(valor_filtro.get(),tabla,var_filtro.get()))
 consulta_button.grid(row=5, column=6)
+#BOTON LIMPIAR FILTROS
+consulta_button = Button(master, text="Limpiar Filtros", command=lambda:actualizar_treeview(tabla))
+consulta_button.grid(row=5, column=7)
 
 #-------------------------------------------------------
 #TREEVIEW
